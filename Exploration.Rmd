@@ -1,0 +1,51 @@
+---
+title: "Exploration"
+output: html_notebook
+---
+
+##Data
+test <- read.csv("test.csv")
+train <- read.csv('train.csv')
+bike <- bind_rows(train=train, test=test, .id = "id")
+
+
+##Libraries
+library(tidyverse)
+library(DataExplorer)
+library(caret)
+library(vroom)
+library(lubridate)
+
+#Drop casual and registered
+bike <- bike %>% select(-casual, -registered)
+
+## Feature Engineering
+bike$month <- month(bike$datetime) %>% as.factor()
+bike$season <- as.factor(bike$season)
+
+#Exploratory Plots
+qplot(1:nrow(train), train$count, geom="point")
+
+ggplot(data=train, aes(x=datetime, y = count, color=as.factor(season))) +
+  geom_point()
+  
+plot_missing(bike)
+
+plot_correlation(bike, type="continuous",
+                 cor_args = list(use= 'pairwise.complete.obs'))
+
+ggplot(bike, aes(season, count)) + 
+  geom_boxplot()
+
+##Dummy variable encoding - one-hot encoding
+dummyVars(count~season, data=bike) %>% 
+  predict(bike) %>% 
+  as.data.frame() %>% 
+  bind_cols(bike %>% select(-season), .)
+
+## Target encoding
+bike$season <- lm(count~season, data=bike) %>% 
+  predict(., newdata=bike %>% select(-count))
+  
+
+
